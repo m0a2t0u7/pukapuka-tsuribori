@@ -98,6 +98,18 @@
 .zone{flex:1;padding:9px 3px;border-radius:20px;border:1px solid #ffffff45;background:#143d47a8;color:#fff;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;}
 .zone.active{background:#f3efe6;color:#163840;box-shadow:0 3px 12px #0002;}.zone:disabled{opacity:.45;cursor:default;}
 .dex .meta{min-width:0}.dex .meta .n{font-size:12px;overflow-wrap:anywhere}.dex{gap:6px}.sheet .grid{touch-action:pan-y;overscroll-behavior:contain;}
+
+.card .cvbox .catch-art{position:relative;z-index:1;animation:fish-arrive .8s cubic-bezier(.2,.8,.3,1) both;}
+.card .rare,.card .newbadge{z-index:3;}
+.rare-catch .cvbox{background:radial-gradient(ellipse at 50% 45%,#73876a 0%,#345e59 45%,#193f43 100%);}
+.new-catch .cvbox{background:radial-gradient(ellipse at 50% 45%,#659e91,#265a55 70%);}
+.rare-catch .cvbox::before{content:'';position:absolute;inset:-90%;background:conic-gradient(from 0deg,transparent 0deg 20deg,#efd37f23 20deg 30deg,transparent 30deg 50deg,#efd37f23 50deg 60deg,transparent 60deg 80deg,#efd37f23 80deg 90deg,transparent 90deg 110deg,#efd37f23 110deg 120deg,transparent 120deg 140deg,#efd37f23 140deg 150deg,transparent 150deg 170deg,#efd37f23 170deg 180deg,transparent 180deg 200deg,#efd37f23 200deg 210deg,transparent 210deg 230deg,#efd37f23 230deg 240deg,transparent 240deg 260deg,#efd37f23 260deg 270deg,transparent 270deg 290deg,#efd37f23 290deg 300deg,transparent 300deg 320deg,#efd37f23 320deg 330deg,transparent 330deg 350deg,#efd37f23 350deg 360deg);animation:soft-rays 2s ease-out both;pointer-events:none;}
+.confetti-layer{position:absolute;inset:0;z-index:2;overflow:hidden;pointer-events:none;}
+.confetti-layer i{position:absolute;left:var(--x);top:-12px;width:6px;height:11px;border-radius:2px;background:var(--piece);animation:confetti-fall 2s var(--delay) ease-in forwards;opacity:0;}
+@keyframes confetti-fall{0%{opacity:0;transform:translateY(0) rotate(0)}10%{opacity:.95}80%{opacity:.8}100%{opacity:0;transform:translateY(240px) rotate(var(--turn))}}
+@keyframes fish-arrive{0%{transform:translateY(16px) scale(.84);opacity:0}65%{transform:translateY(-4px) scale(1.03);opacity:1}100%{transform:none;opacity:1}}
+@keyframes soft-rays{from{transform:rotate(-12deg);opacity:0}40%{opacity:1}to{transform:rotate(12deg);opacity:.65}}
+@media(prefers-reduced-motion:reduce){.card,.overlay.show,.catch-art,.newbadge,.rare-catch .cvbox::before{animation:none!important}.confetti-layer{display:none}}
 </style>
 </head>
 <body>
@@ -120,7 +132,7 @@
   <div class="overlay show" id="startOv">
     <div class="start" id="startInner">
       <div class="logo">ぷかぷか！つりぼり<small>F I S H I N G&nbsp;&nbsp;P O N D</small></div>
-      <p>川・池、海、熱帯、大物の4つの釣り場。<br>70種類の仲間を集めよう！<br>ウキが動いたらタップ、あとは画面を<b>押したまま</b>で引き上げるだけ！</p>
+      <p>川・池、海、熱帯、大物の4つの釣り場。<br>90種類の仲間を集めよう！<br>ウキが動いたらタップ、あとは画面を<b>押したまま</b>で引き上げるだけ！</p>
       <button class="btn" id="startBtn">はじめる</button>
     </div>
   </div>
@@ -149,7 +161,7 @@ const SPECIES=[
   {id:'namazu',name:'ナマズ',rarity:1,w:40,flavor:'ひげが自慢。にごった底のほうが好きらしい。'},
   {id:'nigoi',name:'ニゴイ',rarity:1,w:30,flavor:'コイに似た細身の体。意外と俊敏に泳ぐ。'},
   {id:'nishikigoi',name:'ニシキゴイ',rarity:2,w:40,flavor:'紅白の模様がうつくしい。池のスター。'},
-  {id:'nushi',name:'ぬし',rarity:3,w:70,flavor:'この池でいちばん長生き。会えたら、今日はいい日。'},
+  {id:'nushi',name:'ぬし',rarity:3,w:70,flavor:'金色にきらきら輝く、やさしい池のぬし。会えてうれしいね！'},
   {id:'higai',name:'ヒガイ',rarity:0,w:15,flavor:'銀色の小魚。明治の天皇が好んだという逸話も。'},
   {id:'funa',name:'フナ',rarity:0,w:22,flavor:'池のぬし、というほどでもないけれど、いつもそこにいる。'},
   {id:'herabuna',name:'ヘラブナ',rarity:2,w:35,flavor:'釣り人あこがれの一匹。平たく大きな体が見事。'},
@@ -178,14 +190,17 @@ const ZONES={pond:{name:'川・池',color:'#3f8073'},sea:{name:'海',color:'#287
 let currentZone='pond';
 SPECIES.forEach(f=>{f.zone='pond';});
 EXTRA_SPECIES.forEach(([id,name,rarity,w,zone,art])=>SPECIES.push({id,name,rarity,w,zone,art,flavor:({sea:'海の仲間を発見！ 色やひれの形をよく見てみよう。',reef:'カラフルな熱帯の仲間。図鑑に新しい色が増えた！',giant:'迫力いっぱいの大物！ 次はもっと大きな一匹に出会えるかな？'})[zone]}));
+const NEW_FRIENDS=[["octopus","マダコ",1,40,"sea","くるくる動く足がチャームポイント。吸盤も見てみよう！"],["squid","アオリイカ",1,30,"sea","ひらひらのひれと、すらりとした体がきれい。"],["lobster","イセエビ",2,25,"sea","長いひげと赤いよろい。立派な海の仲間！"],["crab","カニ",0,20,"sea","大きなはさみで、チョキチョキ！"],["seahorse","タツノオトシゴ",2,12,"reef","馬のような顔と、くるんと巻いた尾を見つけた！"],["sunfish","マンボウ",3,200,"giant","まんまるの大きな体！ 上下のひれがとっても長い。"],["yellow_tang","キイロハギ",1,20,"reef","明るい黄色の体と小さな口。きれいな海の仲間！"],["raccoon_butterfly","フウライチョウチョウウオ",1,15,"reef","黄色い体と、目のまわりのしま模様がおしゃれ！"],["boxfish","ハコフグ",1,20,"reef","箱のような体に水玉模様。黄色がぴかぴか！"],["pearl_gourami","パールグラミー",1,12,"reef","真珠みたいな点々模様と、細いひれがきれい。"],["goldfish","ワキン",0,15,"pond","赤い体とひらひらの尾。おなじみの金魚だ！"],["freshwater_angel","エンゼルフィッシュ",1,15,"reef","三角の長いひれ。優雅に泳ぐ姿がすてき！"],["platy","プラティ",0,5,"reef","小さなオレンジ色の体。丸い尾がかわいいね。"],["ishidai","イシダイ",1,40,"sea","黒いしましまがくっきり。いくつあるかな？"],["sawara","サワラ",1,75,"sea","銀色のすらりと長い体。点々模様を見てみよう。"],["mandarin","ニシキテグリ",1,7,"reef","青とオレンジのぐるぐる模様。宝石みたい！"],["blue_damsel","ルリスズメダイ",0,8,"reef","全身がきらきら青色。小さな海の宝石！"],["royalgramma","ロイヤルグラマ",1,8,"reef","紫と黄色のツートンカラー。おしゃれだね！"],["sailfish","バショウカジキ",3,180,"giant","帆のような大きなひれと、長いくちばしが目印！"],["electricray","シビレエイ",2,60,"giant","丸い体に短い尾。マンタとは形が違うね。"]];
+NEW_FRIENDS.forEach(([id,name,rarity,w,zone,flavor])=>SPECIES.push({id,name,rarity,w,zone,flavor}));
 /* Species-specific painted sprites. Atlas rectangles include complete fins and tails. */
-const FISH_RECTS={"ayu":[0,20,78,360,144],"iwana":[0,420,73,360,153],"ugui":[0,830,69,340,162],"unagi":[0,1220,74,360,152],"oikawa":[0,1620,64,360,172],"kajika":[0,20,363,360,173],"ginbuna":[0,427,332,346,236],"kinbuna":[0,820,329,359,242],"kuchiboso":[0,1241,378,318,143],"koi":[0,1620,352,360,195],"sake":[1,20,76,360,147],"shirauo":[1,426,110,348,80],"tanago":[1,839,53,321,194],"chouzame":[1,1220,82,360,136],"demekin":[1,1623,21,354,258],"dojou":[1,20,400,360,99],"namazu":[1,420,361,360,178],"nigoi":[1,820,365,360,169],"nishikigoi":[1,1220,355,360,190],"nushi":[1,1624,320,352,260],"higai":[2,20,77,360,146],"funa":[2,420,36,360,227],"herabuna":[2,837,20,325,260],"honmoroko":[2,1220,73,360,154],"musashi":[2,1620,85,360,130],"medaka":[2,31,388,337,124],"yamame":[2,420,370,360,159],"yoshinobori":[2,820,367,360,166],"raigyo":[2,1220,393,360,113],"wakasagi":[2,1627,389,345,121],"aji":[3,20,63,360,174],"iwashi":[3,426,88,348,123],"saba":[3,820,79,360,141],"sanma":[3,1220,112,360,75],"tai":[3,1620,49,360,202],"kurodai":[3,20,338,360,223],"suzuki":[3,420,372,360,156],"buri":[3,820,370,360,160],"katsuo":[3,1220,358,360,184],"maguro":[3,1620,355,360,190],"hirame":[4,20,39,360,221],"karei":[4,420,25,360,249],"fugu":[4,820,70,360,159],"kawahagi":[4,1262,20,276,260],"mebaru":[4,1620,31,360,237],"kasago":[4,20,333,360,234],"kinmedai":[4,431,320,337,260],"tachiuo":[4,846,320,308,260],"tobiuo":[4,1248,320,303,260],"shishamo":[4,1620,390,360,120],"clownfish":[5,20,42,360,216],"blue_tang":[5,420,31,359,238],"butterfly":[5,852,20,296,260],"angelfish":[5,1221,20,357,260],"parrotfish":[5,1620,49,360,202],"napoleon":[5,20,333,360,233],"lionfish":[5,469,320,261,260],"moorish":[5,893,320,214,260],"goby":[5,1266,320,267,260],"wrasse":[5,1620,371,360,157],"neon":[6,40,72,319,156],"guppy":[6,436,30,327,239],"discus":[6,873,20,254,260],"betta":[6,1237,20,325,260],"arowana":[6,1620,81,360,137],"pirarucu":[6,20,398,360,103],"hammerhead":[6,420,344,360,211],"whaleshark":[6,820,347,360,206],"manta":[6,1278,320,243,260],"oarfish":[6,1620,325,360,250]};
+const FISH_RECTS={"ayu":[0,20,78,360,144],"iwana":[0,420,73,360,153],"ugui":[0,830,69,340,162],"unagi":[0,1220,74,360,152],"oikawa":[0,1620,64,360,172],"kajika":[0,20,363,360,173],"ginbuna":[0,427,332,346,236],"kinbuna":[0,820,329,359,242],"kuchiboso":[0,1241,378,318,143],"koi":[0,1620,352,360,195],"sake":[1,20,76,360,147],"shirauo":[1,426,110,348,80],"tanago":[1,839,53,321,194],"chouzame":[1,1220,82,360,136],"demekin":[1,1623,21,354,258],"dojou":[1,20,400,360,99],"namazu":[1,420,361,360,178],"nigoi":[1,820,365,360,169],"nishikigoi":[1,1220,355,360,190],"nushi":[8,20,655,360,190],"higai":[2,20,77,360,146],"funa":[2,420,36,360,227],"herabuna":[2,837,20,325,260],"honmoroko":[2,1220,73,360,154],"musashi":[2,1620,85,360,130],"medaka":[2,31,388,337,124],"yamame":[2,420,370,360,159],"yoshinobori":[2,820,367,360,166],"raigyo":[2,1220,393,360,113],"wakasagi":[2,1627,389,345,121],"aji":[3,20,63,360,174],"iwashi":[3,426,88,348,123],"saba":[3,820,79,360,141],"sanma":[3,1220,112,360,75],"tai":[3,1620,49,360,202],"kurodai":[3,20,338,360,223],"suzuki":[3,420,372,360,156],"buri":[3,820,370,360,160],"katsuo":[3,1220,358,360,184],"maguro":[3,1620,355,360,190],"hirame":[4,20,39,360,221],"karei":[4,420,25,360,249],"fugu":[4,820,70,360,159],"kawahagi":[4,1262,20,276,260],"mebaru":[4,1620,31,360,237],"kasago":[4,20,333,360,234],"kinmedai":[4,431,320,337,260],"tachiuo":[4,846,320,308,260],"tobiuo":[4,1248,320,303,260],"shishamo":[4,1620,390,360,120],"clownfish":[5,20,42,360,216],"blue_tang":[5,420,31,359,238],"butterfly":[5,852,20,296,260],"angelfish":[5,1221,20,357,260],"parrotfish":[5,1620,49,360,202],"napoleon":[5,20,333,360,233],"lionfish":[5,469,320,261,260],"moorish":[5,893,320,214,260],"goby":[5,1266,320,267,260],"wrasse":[5,1620,371,360,157],"neon":[6,40,72,319,156],"guppy":[6,436,30,327,239],"discus":[6,873,20,254,260],"betta":[6,1237,20,325,260],"arowana":[6,1620,81,360,137],"pirarucu":[6,20,398,360,103],"hammerhead":[6,420,344,360,211],"whaleshark":[6,820,347,360,206],"manta":[6,1278,320,243,260],"oarfish":[6,1620,325,360,250],"octopus":[7,38,20,323,260],"squid":[7,420,25,360,249],"lobster":[7,855,20,289,260],"crab":[7,1220,51,360,197],"seahorse":[7,1721,20,158,260],"sunfish":[7,85,320,229,260],"boxfish":[7,1222,343,355,213],"goldfish":[8,20,24,360,252],"ishidai":[8,1231,22,337,256],"sawara":[8,1620,94,360,112],"mandarin":[8,25,320,349,260],"blue_damsel":[8,441,336,318,227],"royalgramma":[8,827,365,346,170],"sailfish":[8,1220,360,360,179],"electricray":[8,1631,320,337,260],"yellow_tang":[7,426,320,348,260],"raccoon_butterfly":[7,823,320,353,260],"pearl_gourami":[7,1634,320,331,260],"freshwater_angel":[8,497,20,206,260],"platy":[8,847,50,305,200]};
 const SPR={};let sprLoaded=0,spritesLoading=false;
+const REDUCED_MOTION=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 function loadSheet(url){return new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('魚の画像を読み込めませんでした'));im.src=url;});}
 function loadSprites(){
  if(spritesLoading)return; spritesLoading=true;
  const button=document.getElementById('startBtn');button.disabled=true;button.textContent='さかなを準備中…';
- return Promise.all(Array.from({length:7},(_,i)=>loadSheet('assets/fish-atlas-'+i+'.webp?v=painted-1'))).then(sheets=>{
+ return Promise.all(Array.from({length:9},(_,i)=>loadSheet('assets/fish-atlas-'+i+'.webp?v=painted-1'))).then(sheets=>{
   for(const f of SPECIES){const [sheet,x,y,w,h]=FISH_RECTS[f.id];const sprite=document.createElement('canvas');sprite.width=w;sprite.height=h;
    sprite.getContext('2d').drawImage(sheets[sheet],x,y,w,h,0,0,w,h);SPR[f.id]=sprite;SPR_SRC[f.id]=sprite.toDataURL('image/png');}
   sprLoaded=SPECIES.length;button.textContent='はじめる';button.disabled=false;
@@ -277,10 +292,13 @@ function missHook(a,b){G.state='resting';G.hooked=null;addSplash(G.fx,G.fy,16,'#
   navigator.vibrate&&navigator.vibrate(40);setTimeout(()=>{if(G.state==='resting')beginWait();},700);}
 
 function landFish(){G.state='leap';G.leapT=0;
+  const big=G.hooked.zone==='giant'||G.hooked.w>=100;G.leapDur=big?1.5:1.15;
+  setMsg(big?'わあ！ おおもの！':G.hookedIsNew?'はじめての仲間だ！':'やった！ つれた！','');
   document.getElementById('tension').style.display='none';
-  addSplash(G.fx,H*G.horizon+30,30,'#f2fbf7',1.6);addRipple(G.fx,H*G.horizon+34,120,1.2);
+  addSplash(G.fx,H*G.horizon+30,big?48:30,'#f2fbf7',big?2:1.6);addRipple(G.fx,H*G.horizon+34,big?170:120,1.2);
+  if(big){addRipple(G.fx,H*G.horizon+34,130,.8);addRipple(G.fx,H*G.horizon+34,90,1.5);}
   shake(9);flash('0.5');navigator.vibrate&&navigator.vibrate([30,30,60]);
-  if(G.hooked.rarity>=2||G.hookedIsNew)addSparkle(W/2,H*0.42,18);}
+  if(G.hooked.rarity>=2||G.hookedIsNew)addSparkle(W/2,H*0.42,big?32:22);}
 function finishLand(){const s=G.hooked;const isNew=G.hookedIsNew;
   const size=Math.round(s.w+G.hookQuality*s.w*0.5+Math.random()*s.w*0.4);
   const pts=Math.round((s.rarity*30+20)*(0.8+Math.random()*0.4));
@@ -435,7 +453,9 @@ function drawLeap(wt){
   const arc=Math.sin(Math.min(1,p)*Math.PI)*H*0.20;
   const y=lerp(startY,endY,easeOut(p))-arc;
   const rot=Math.sin(p*Math.PI)*0.6 - 0.3;
-  const tw=lerp(120,190,easeOut(p));
+  const big=G.hooked.zone==='giant'||G.hooked.w>=100;
+  const tw=Math.min(lerp(120,big?245:190,easeOut(p)),W*.72,sp?H*.3*sp.width/sp.height:245);
+  drawCatchAura(x,y,tw,p,G.hooked.rarity>=2||big,G.hookedIsNew);
   ctx.save();ctx.translate(x,y);ctx.rotate(rot);
   if(sp&&sp.width&&sp.height){const h=tw*sp.height/sp.width;ctx.scale(-1,1);
     ctx.shadowColor='rgba(0,0,0,.35)';ctx.shadowBlur=18;ctx.shadowOffsetY=8;
@@ -443,6 +463,20 @@ function drawLeap(wt){
   ctx.restore();
   // water droplets trailing
   if(p<0.5&&Math.random()<0.6)addSplash(x,y+10,3,'#dff2ec',0.7);
+}
+function drawCatchAura(x,y,width,p,rare,isNew){
+ if(!rare&&!isNew)return;
+ const alpha=Math.sin(Math.PI*Math.min(1,p))*.65;
+ ctx.save();ctx.translate(x,y);ctx.globalAlpha=alpha;
+ const colors=rare?['#ffe8a2','#e8bb60','#fff3c9']:['#efb1b7','#b0dfd0','#a9d7f4','#f4df9a'];
+ for(let i=0;i<3;i++){ctx.beginPath();ctx.strokeStyle=colors[i];ctx.lineWidth=3;const r=width*(.5+i*.16)+p*20;ctx.ellipse(0,0,r,r*.65,0,0,Math.PI*2);ctx.stroke();}
+ if(!REDUCED_MOTION){for(let i=0;i<12;i++){const angle=i*Math.PI/6+p*.25;ctx.strokeStyle=colors[i%colors.length];ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(Math.cos(angle)*width*.65,Math.sin(angle)*width*.48);ctx.lineTo(Math.cos(angle)*width*.83,Math.sin(angle)*width*.64);ctx.stroke();}}
+ ctx.restore();
+}
+function catchConfetti(isNew,rare){
+ if(REDUCED_MOTION||(!isNew&&!rare))return '';
+ const colors=rare?['#edbf55','#fff0b8','#ffffff']:['#ed9aa9','#a1d9c6','#92c9eb','#f4db91'];
+ return '<div class="confetti-layer" aria-hidden="true">'+Array.from({length:24},(_,i)=>'<i style="--x:'+((i*37)%100)+'%;--delay:'+((i%6)*.08)+'s;--turn:'+((i%2?-1:1)*(180+i*15))+'deg;--piece:'+colors[i%colors.length]+'"></i>').join('')+'</div>';
 }
 function drawParticles(){ctx.save();G.particles.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life);
   ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,(p.r||1.8)*(0.5+p.life*0.7),0,6.28);ctx.fill();});
@@ -465,10 +499,10 @@ function drawRod(){const shakeX=G.rodShake*(Math.random()-0.5)*7,shakeY=G.rodSha
   ctx.fillStyle='#2c2018';ctx.beginPath();ctx.arc(W*0.965,H*0.86,10,0,6.28);ctx.fill();ctx.restore();}
 
 function showCatch(s,size,pts,isNew){const ov=document.getElementById('catchOv');
-  const img=SPR_SRC[s.id]||'';
-  ov.innerHTML='<div class="card"><div class="cvbox">'+
-    (img?'<img src="'+img+'" alt="'+s.name+'">':'')+
-    (isNew?'<div class="newbadge">NEW!</div>':'')+
+  const img=SPR_SRC[s.id]||'',rare=s.rarity>=2||s.zone==='giant';
+  ov.innerHTML='<div class="card '+(rare?'rare-catch':isNew?'new-catch':'')+'"><div class="cvbox">'+catchConfetti(isNew,rare)+
+    (img?'<img class="catch-art" src="'+img+'" alt="'+s.name+'">':'')+
+    (isNew?'<div class="newbadge">はじめて！</div>':'')+
     (s.rarity>=1?'<div class="rare">'+RARITY_NAME[s.rarity]+'</div>':'')+
     '</div><div class="body"><div class="name">'+s.name+'</div>'+
     '<div class="sub">'+ZONES[s.zone].name+' ・ '+RARITY_NAME[s.rarity]+'</div>'+
